@@ -9,7 +9,7 @@ pipeline {
     stage('Checkout') {
       steps {
         sh 'echo passed'
-        //git branch: 'main', url: 'https://github.com/iam-veeramalla/Jenkins-Zero-To-Hero.git'
+        //git branch: 'main', url: 'https://github.com/MPdharmpalsingh/Jenkins-Zero-To-Hero.git'
       }
     }
     stage('Build and Test') {
@@ -24,7 +24,7 @@ pipeline {
         SONAR_URL = "http://35.194.38.36:9000"
       }
       steps {
-        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'sqa_3652a01a0e77bad1d5fa2b1e9d1740c41d7950e6')]) {
           sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
         }
       }
