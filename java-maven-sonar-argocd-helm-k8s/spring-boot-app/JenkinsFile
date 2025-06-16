@@ -36,13 +36,7 @@ pipeline {
       }
     }
 
-    stage('Static Code Analysis') {
-      agent {
-        docker {
-          image 'maven:3.9.6-eclipse-temurin-17'
-          args '--user root'
-        }
-      }
+     stage('Static Code Analysis') {
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
           dir("${env.APP_DIR}") {
