@@ -56,6 +56,10 @@ pipeline {
     }
 
     stage('Update Deployment File') {
+        environment {
+            GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
+            GIT_USER_NAME = "Dharmpal"
+      }
       steps {
         withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
           dir('java-maven-sonar-argocd-helm-k8s') {
