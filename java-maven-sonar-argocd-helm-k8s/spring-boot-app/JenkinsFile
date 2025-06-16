@@ -1,34 +1,26 @@
 pipeline {
-  agent none
+  agent {
+    docker {
+      image 'maven:3.9.6-eclipse-temurin-17'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
+    }
+  }
 
   environment {
     SONAR_URL = "http://34.28.114.145:9000"
     GIT_USER_NAME = "MPdharmpalsingh"
     GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
     APP_DIR = "java-maven-sonar-argocd-helm-k8s/spring-boot-app"
-    DOCKER_IMAGE = "mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER}"
   }
 
   stages {
     stage('Checkout') {
-      agent {
-        docker {
-          image 'maven:3.9.6-eclipse-temurin-17'
-          args '--user root -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
-        }
-      }
       steps {
         git branch: 'main', url: "https://github.com/${env.GIT_USER_NAME}/${env.GIT_REPO_NAME}.git"
       }
     }
 
     stage('Build and Test') {
-      agent {
-        docker {
-          image 'maven:3.9.6-eclipse-temurin-17'
-          args '--user root'
-        }
-      }
       steps {
         dir("${env.APP_DIR}") {
           sh 'mvn clean package'
@@ -36,7 +28,7 @@ pipeline {
       }
     }
 
-     stage('Static Code Analysis') {
+    stage('Static Code Analysis') {
       steps {
         withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
           dir("${env.APP_DIR}") {
@@ -47,11 +39,8 @@ pipeline {
     }
 
     stage('Build and Push Docker Image') {
-      agent {
-        docker {
-          image 'maven:3.9.6-eclipse-temurin-17'
-          args '--user root -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
-        }
+      environment {
+        DOCKER_IMAGE = "mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER}"
       }
       steps {
         dir("${env.APP_DIR}") {
@@ -67,25 +56,24 @@ pipeline {
     }
 
     stage('Deploy to Cloud Run') {
-      agent {
-        docker {
-          image 'google/cloud-sdk:slim'
-          args '--user root'
-        }
-      }
       steps {
         withCredentials([file(credentialsId: 'gcp-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-          sh '''
-            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-            gcloud config set project macro-mender-463013-n5
-            gcloud config set run/region us-central1-f
-            gcloud run deploy spring-boot-cloudrun \
-              --image=docker.io/mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER} \
-              --platform=managed \
-              --allow-unauthenticated
-          '''
+          script {
+            def serviceName = "spring-boot-cloudrun"
+            def region = "us-central1-f"  // adjust as needed
+            sh '''
+              gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+              gcloud config set project macro-mender-463013-n5
+              gcloud config set run/region ''' + region + '''
+              gcloud run deploy ''' + serviceName + ''' \
+                --image=docker.io/mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER} \
+                --platform=managed \
+                --allow-unauthenticated
+            '''
+          }
         }
       }
     }
+
   }
 }
