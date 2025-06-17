@@ -1,8 +1,8 @@
 pipeline {
   agent {
     docker {
-      image 'google/cloud-sdk:slim'
-      args '--user root'
+      image 'maven:3.9.6-eclipse-temurin-17'
+      args '--user root -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/docker:/usr/bin/docker'
     }
   }
 
@@ -11,6 +11,7 @@ pipeline {
     GIT_USER_NAME = "MPdharmpalsingh"
     GIT_REPO_NAME = "Jenkins-Zero-To-Hero"
     APP_DIR = "java-maven-sonar-argocd-helm-k8s/spring-boot-app"
+    DOCKER_IMAGE = "mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER}"
   }
 
   stages {
@@ -39,9 +40,6 @@ pipeline {
     }
 
     stage('Build and Push Docker Image') {
-      environment {
-        DOCKER_IMAGE = "mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER}"
-      }
       steps {
         dir("${env.APP_DIR}") {
           script {
@@ -55,25 +53,23 @@ pipeline {
       }
     }
 
+    // 👇👇 Here's the important change!
     stage('Deploy to Cloud Run') {
+      
       steps {
         withCredentials([file(credentialsId: 'gcp-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-          script {
-            def serviceName = "spring-boot-cloudrun"
-            def region = "us-central1-f"  // adjust as needed
-            sh '''
-              export PATH=$PATH:/snap/bin
-              gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-              gcloud config set project macro-mender-463013-n5
-              gcloud config set run/region us-central1-f
-              gcloud run deploy spring-boot-cloudrun \
-                --image=docker.io/mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER} \
-                --platform=managed --allow-unauthenticated
-            '''
-          }
+          sh '''
+            export PATH=$PATH:/snap/bin
+            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+            gcloud config set project macro-mender-463013-n5
+            gcloud config set run/region us-central1-f
+            gcloud run deploy spring-boot-cloudrun \
+              --image=docker.io/mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER} \
+              --platform=managed \
+              --allow-unauthenticated
+          '''
         }
       }
     }
-
   }
 }
