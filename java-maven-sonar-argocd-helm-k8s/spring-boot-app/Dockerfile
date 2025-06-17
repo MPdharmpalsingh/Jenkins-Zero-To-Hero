@@ -12,21 +12,20 @@
 # This should not be changed
 #ENTRYPOINT ["java","-jar","app.jar"]
 #--------------------------------------------------gcp------------
-# Use a slim JDK base with compatibility for Cloud Run
-FROM eclipse-temurin:17-jre-alpine
+FROM maven:3.9.6-eclipse-temurin-17
 
-# Define artifact via build arg
-ARG artifact=target/spring-boot-web.jar
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl unzip python3 python3-distutils gnupg apt-transport-https \
+    && ln -s /usr/bin/python3 /usr/bin/python
 
-# App directory
-WORKDIR /app
+# Install Google Cloud CLI
+ENV CLOUD_SDK_VERSION=465.0.0
+RUN curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
+    tar -xf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
+    ./google-cloud-sdk/install.sh --quiet && \
+    ln -s /google-cloud-sdk/bin/gcloud /usr/bin/gcloud
 
-# Copy jar into container
-COPY ${artifact} app.jar
+ENV PATH="/google-cloud-sdk/bin:${PATH}"
 
-# Optional: Enable health check (optional but great for prod readiness)
-HEALTHCHECK --interval=30s --timeout=5s CMD wget --spider http://localhost:8080/actuator/health || exit 1
-
-# Run the app
-ENTRYPOINT ["java", "-jar", "app.jar"]
 
