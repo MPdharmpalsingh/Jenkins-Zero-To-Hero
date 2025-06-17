@@ -62,13 +62,13 @@ pipeline {
             def serviceName = "spring-boot-cloudrun"
             def region = "us-central1-f"  // adjust as needed
             sh '''
+              export PATH=$PATH:/snap/bin
               gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
               gcloud config set project macro-mender-463013-n5
-              gcloud config set run/region ''' + region + '''
-              gcloud run deploy ''' + serviceName + ''' \
+              gcloud config set run/region us-central1-f
+              gcloud run deploy spring-boot-cloudrun \
                 --image=docker.io/mpdharmpalsingh/ultimate-cicd:${BUILD_NUMBER} \
-                --platform=managed \
-                --allow-unauthenticated
+                --platform=managed --allow-unauthenticated
             '''
           }
         }
