@@ -23,7 +23,7 @@ pipeline {
     stage('Build and Test') {
       steps {
         dir("${env.APP_DIR}") {
-          sh 'mvn clean package'
+          sh 'mvn clean package -X'
         }
       }
     }
